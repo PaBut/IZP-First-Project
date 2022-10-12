@@ -107,7 +107,7 @@ char toUpper(char c){
 
 
 bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]){
-    for(int i = startPoint; i < strlen(str); i++){//TODO:On the last iteration(when i = len - 1), on the next attempt it misses the cycle and returns false 
+    for(int i = startPoint; i < strlen(str); i++){/**///TODO:On the last iteration(when i = len - 1), on the next attempt it misses the cycle and returns false 
 
         //printf("\n%d %c", i, str[i]);
 
@@ -138,9 +138,13 @@ bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted
         }
 
         if(conditions){
-            printf("\n%s - %c - %d\n", str, str[i], startPoint2);
+            //printf("\n%s - %c - %d\n", str, str[i], startPoint2);
+
+            if(startPoint2+1 == strlen(wanted) && i + 1 == strlen(str)){
+                return true;
+            }
             if(checkIfAppropriate(i+1, str, startPoint2+1, wanted)){
-                printf("\n\t\t\t%s - %c - %d\n", str, str[i], startPoint2);
+                //printf("\n\t\t\t%s - %c - %d\n", str, str[i], startPoint2);
 
                 str[i] = toUpper(str[i]);
                 return true;

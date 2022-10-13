@@ -3,10 +3,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-void findContacts(char value[]);
-void getString(char *arr);
+
+bool findContacts(char value[]);
+bool getString(char *arr);
 bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]);
 void clearString(char str[]);
+char toUpper(char c);
 char toLow(char c);
 
 char dictionary[10][5] = {
@@ -25,13 +27,13 @@ char dictionary[10][5] = {
 int main(int argc, char* argv[])
 {       
     //Doing smth in dependacy with count of arguments
-    printf("%d", argc);
     if(argc == 1){
         findContacts(NULL);
     }
     else if(argc == 2){
-        //printf("\n%s\n", argv[1]);  
-        findContacts(argv[1]);
+        if(!findContacts(argv[1])){
+            printf("Not found");
+        }
     }
     else{
         return -1;
@@ -39,50 +41,55 @@ int main(int argc, char* argv[])
 }
 
 
-void findContacts(char value[])//basic function for both cases
+bool findContacts(char value[])//basic function for both cases
 {
     char name[100];
     char number[100];
+    bool lastLine;
+    bool isFound = false;
 
-    while(1){
-        
-        getString(name);                            //Getting name and number of each contact
-        getString(number);
+    do{
+        if(!getString(name)){    
+            exit(-1);
+        }
+        lastLine = getString(number);
+
         if(value == NULL){
             printf("\n%s %s\n", name, number);
+            isFound = true;
         }
         else if(checkIfAppropriate(0,number, 0, value) || checkIfAppropriate(0,name, 0, value)){
             printf("\n%s %s\n", name, number);
-
+            isFound = true;
         }
 
-        if(number[strlen(number)-1] == EOF){        
-            break;
-        }
         clearString(name);
         clearString(number);
-    }
-}
-void getString(char arr[])//Get name or number of a contact. Also checking here, if the list is full read.
-{
-    for(int i = 0;  ; i++ ){
+    }while(lastLine);
 
-        if(i == 100){
-            exit(-1);
-        }
+    return isFound;
+}
+bool getString(char arr[])//Get name or number of a contact. Also checking here, if the list is full read.
+{
+    for(int i = 0; i < 100 ; i++ ){
         
         arr[i] = toLow(getc(stdin));
-        
-        if(arr[i] == EOF){
-            return;
-        }
 
         if(arr[i] == '\n'){
             arr[i] = '\0';
-            return;
+            return true;
+        }
+        if(arr[i] == EOF){
+            arr[i] = '\0';
+            return false;
         }
     }    
+    exit(-1);
 }
+
+/*bool checkIfName(char str[]){
+    for(int i = 0; i < )
+}*/
 
 
 void clearString(char str[])
@@ -111,10 +118,10 @@ bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted
 
         //printf("\n%d %c", i, str[i]);
 
-        if(startPoint2 == strlen(wanted)){ //base case of recurze
+        /*if(startPoint2 == strlen(wanted)){ //base case of recurze
             //printf("\n\t%s - %c\n", str, str[i]); 
             return true;
-        }
+        }*/
 
         bool conditions = false;
 
@@ -140,12 +147,11 @@ bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted
         if(conditions){
             //printf("\n%s - %c - %d\n", str, str[i], startPoint2);
 
-            if(startPoint2+1 == strlen(wanted) && i + 1 == strlen(str)){
+            if(startPoint2+1 == strlen(wanted)){
+                str[i] = toUpper(str[i]);
                 return true;
             }
             if(checkIfAppropriate(i+1, str, startPoint2+1, wanted)){
-                //printf("\n\t\t\t%s - %c - %d\n", str, str[i], startPoint2);
-
                 str[i] = toUpper(str[i]);
                 return true;
             }

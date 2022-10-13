@@ -2,14 +2,16 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 bool findContacts(char value[]);
-bool getString(char *arr);
+bool getLine(char *arr);
+bool checkifNumber(char str[]);
 bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]);
 void clearString(char str[]);
 char toUpper(char c);
-char toLow(char c);
+char toLower(char c);
 
 char dictionary[10][5] = {
     "+",
@@ -24,6 +26,7 @@ char dictionary[10][5] = {
     "wxyz"
 };
 
+
 int main(int argc, char* argv[])
 {       
     //Doing smth in dependacy with count of arguments
@@ -36,6 +39,7 @@ int main(int argc, char* argv[])
         }
     }
     else{
+        perror("You have given wrong amout of arguments");
         return -1;
     }
 }
@@ -49,10 +53,16 @@ bool findContacts(char value[])//basic function for both cases
     bool isFound = false;
 
     do{
-        if(!getString(name)){    
+        if(!getLine(name)){    
+            perror("You have forgotten to add a number after the name");
             exit(-1);
         }
-        lastLine = getString(number);
+        lastLine = getLine(number);
+
+        if(!isNumber(number)){
+            perror("You have missed the order of names and numbers");
+            exit(-1);
+        }
 
         if(value == NULL){
             printf("\n%s %s\n", name, number);
@@ -69,11 +79,11 @@ bool findContacts(char value[])//basic function for both cases
 
     return isFound;
 }
-bool getString(char arr[])//Get name or number of a contact. Also checking here, if the list is full read.
+bool getLine(char arr[])//Get name or number of a contact. Also checking here, if the list is full read.
 {
     for(int i = 0; i < 100 ; i++ ){
         
-        arr[i] = toLow(getc(stdin));
+        arr[i] = toLower(getc(stdin));
 
         if(arr[i] == '\n'){
             arr[i] = '\0';
@@ -84,12 +94,19 @@ bool getString(char arr[])//Get name or number of a contact. Also checking here,
             return false;
         }
     }    
+    perror("The line is higher than 100");
     exit(-1);
 }
 
-/*bool checkIfName(char str[]){
-    for(int i = 0; i < )
-}*/
+bool checkifNumber(char str[]){
+    bool isNumber = true;
+    for(int i = 0; i < strlen(str); i++)[
+        if(!((str[i] >= '0' && str[i] =< '9') || str[i] == '-' || str[i] == '+')){
+            isNumber = false;
+        }
+    ]
+    return isNumber;
+}
 
 
 void clearString(char str[])
@@ -99,7 +116,7 @@ void clearString(char str[])
     }
 }
 
-char toLow(char c){
+char toLower(char c){
     if(c >= 'A' && c <= 'Z'){
         return c + ('a'-'A');
     }
@@ -114,14 +131,7 @@ char toUpper(char c){
 
 
 bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]){
-    for(int i = startPoint; i < strlen(str); i++){/**///TODO:On the last iteration(when i = len - 1), on the next attempt it misses the cycle and returns false 
-
-        //printf("\n%d %c", i, str[i]);
-
-        /*if(startPoint2 == strlen(wanted)){ //base case of recurze
-            //printf("\n\t%s - %c\n", str, str[i]); 
-            return true;
-        }*/
+    for(int i = startPoint; i < strlen(str); i++){
 
         bool conditions = false;
 

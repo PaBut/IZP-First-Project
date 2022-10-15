@@ -4,15 +4,22 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#define SIZE 101
 
-bool findContacts(char value[]);
+typedef struct{
+    char name[SIZE];
+    char number[SIZE];
+}Contact;
+int findContacts(char value[], int countOfMistakes, Contact contacts[]);
 bool getLine(char *arr);
 bool checkifNumber(char str[]);
 bool checkIfName(char str[]);
-bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]);
+bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[], int countOfMistakes);
 void clearString(char str[]);
-char toUpper(char c);
-char toLower(char c);
+//char toUpper(char c);
+//char toLower(char c);
+void displayContacts(int length, Contact contacts[]);
+
 
 char dictionary[10][5] = {
     "+",
@@ -30,14 +37,31 @@ char dictionary[10][5] = {
 
 int main(int argc, char* argv[])
 {       
+    Contact contacts[100];
+    int length = 0;
     //Doing smth in dependacy with count of arguments
     if(argc == 1){
-        findContacts(NULL);
+        length = findContacts(NULL, 0 ,contacts);
     }
-    else if(argc == 2){
+    else if(argc == 2 || argc == 3){;
         if(checkifNumber(argv[1])){
-            if(!findContacts(argv[1])){
-               printf("Not found");
+            if(argc == 3){
+                if(checkifNumber(argv[2])){
+                    if(strlen(argv[2]) < 2){
+                        int countOfMistakes = (int)*argv[2] - '0';
+                        length = findContacts(argv[1], countOfMistakes, contacts);
+                    }
+                    else{
+                        fprintf(stderr ,"The second argument can't be higher than 9");
+                    }
+                }
+                else{
+                    fprintf(stderr ,"The argument(count of available mistakes) you send to the application is not number!!!");
+                    return -1;
+                }
+            }
+            if(argc == 2){
+                length = findContacts(argv[1], 0, contacts);
             }
         }
         else{
@@ -50,15 +74,25 @@ int main(int argc, char* argv[])
         fprintf(stderr ,"You have given wrong amout of arguments");
         return -1;
     }
+
+    if(length > 0){
+        displayContacts(length, contacts);
+    }
+    else{
+        printf("Not found");
+    }
+
+    return 0;
 }
 
 
-bool findContacts(char value[])//basic function for both cases
+int findContacts(char value[], int countOfMistakes, Contact contacts[])//basic function for both cases
 {
-    char name[100];
-    char number[100];
+    char name[SIZE];
+    char number[SIZE];
     bool isLastLine;
     bool isFound = false;
+    int index = 0;
 
     do{
         if(!getLine(name)){    
@@ -73,11 +107,15 @@ bool findContacts(char value[])//basic function for both cases
         }
 
         if(value == NULL){
-            printf("%s %s\n", name, number);
+            //printf("%s %s\n", name, number);
+            strcpy(contacts[index].name, name);
+            strcpy(contacts[index++].number, number);
             isFound = true;
         }
-        else if(checkIfAppropriate(0,number, 0, value) || checkIfAppropriate(0,name, 0, value)){
-            printf("%s %s\n", name, number);
+        else if(checkIfAppropriate(0,number, 0, value, countOfMistakes) || checkIfAppropriate(0,name, 0, value, countOfMistakes)){
+            //printf("%s %s\n", name, number);
+            strcpy(contacts[index].name, name);
+            strcpy(contacts[index++].number, number);
             isFound = true;
         }
 
@@ -85,7 +123,7 @@ bool findContacts(char value[])//basic function for both cases
         //clearString(number);
     }while(isLastLine);
 
-    return isFound;
+    return index;
 }
 bool getLine(char arr[])//Get name or number of a contact. Also checking here, if the list is full read.
 {
@@ -167,23 +205,39 @@ bool isSymbotMatched(char symbol, char wanted){//checking here if a symbol in pr
     return false;
 }
 
-bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]){
+bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[], int countOfMistakes){
     for(int i = startPoint; i < strlen(str); i++){
-
-        
-
         if(isSymbotMatched(str[i], wanted[startPoint2])){
 
             if(startPoint2+1 == strlen(wanted)){//every symbol given by user is found in name/number
                 //str[i] = toUpper(str[i]);
                 return true;
             }
-            if(checkIfAppropriate(i+1, str, startPoint2+1, wanted)){ //going to the next etap of recursion
+            if(checkIfAppropriate(i+1, str, startPoint2+1, wanted, countOfMistakes)){ //going to the next etap of recursion
                 //str[i] = toUpper(str[i]);
                 return true;
             }
         }
+
+        if(i + 1 == strlen(str)){
+           if(countOfMistakes > 0){
+                if(startPoint2+2 == strlen(wanted)){
+                    return true;
+                }
+                startPoint2++;
+                i = startPoint;
+                countOfMistakes--;
+            }
+        }
     }
+
+
     return false;
+}
+
+void displayContacts(int length, Contact contacts[]){
+    for(int i = 0; i < length; i++){
+        printf("%s %s\n", contacts[i].name, contacts[i].number);
+    }
 }
 

@@ -17,7 +17,7 @@ bool checkIfName(char str[]);
 bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[], int countOfMistakes);
 void clearString(char str[]);
 //char toUpper(char c);
-//char toLower(char c);
+char toLower(char c);
 void displayContacts(int length, Contact contacts[]);
 
 
@@ -129,7 +129,7 @@ bool getLine(char arr[])//Get name or number of a contact. Also checking here, i
 {
     for(int i = 0; i < 100 ; i++ ){
         
-        arr[i] = getc(stdin);
+        arr[i] = toLower(tgetc(stdin));
 
         if(arr[i] == '\n'){
             arr[i] = '\0';
@@ -172,12 +172,12 @@ bool checkIfName(char str[]){
     }
 }*/
 
-/*char toLower(char c){
+char toLower(char c){
     if(c >= 'A' && c <= 'Z'){
         return c + ('a'-'A');
     }
     return c;
-}
+}/*
 char toUpper(char c){
     if(c >= 'a' && c <= 'z'){
         return c - ('a'-'A');

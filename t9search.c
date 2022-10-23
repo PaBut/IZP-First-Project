@@ -1,67 +1,74 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <math.h>
+//#include <math.h>
 
 #define SIZE 101
 #define ERROR -1
 
-int findContacts(char searchedElement[], int countOfMistakes);
+typedef enum{
+    displayall,
+    simplecheck,
+    checkwithspaces,
+    levenshteinmethod
+} selectedMode;
+
+int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes);
 int getLine(char *arr);
 bool checkifNumber(char str[]);
 bool checkIfName(char str[]);
-bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]);
+bool CheckWithSpace(int startPoint, char str[], int startPoint2, char wanted[]);
 bool levenshteinMethod(char str[], char wanted[], int countOfMistakes);
 int convertStringToInt(char numToConvert[]);
 char toLower(char c);
 
 //number to the group of letter relation
-char dictionary[10][5] = {
-    "+",
-    "",
-    "abc",
-    "def",
-    "ghi",
-    "jkl",
-    "mno",
-    "pqrs",
-    "tuv",
-    "wxyz"
-};
 
 
 int main(int argc, char* argv[])
 {       
     int result = 0;
-    //Doing smth in dependancy on count of arguments
+
     if(argc == 1){
-        result = findContacts(NULL, 0);
+        result = findContacts(NULL, displayall, 0);
     }
-    else if(argc == 2 || argc == 3){
-        if(!checkifNumber(argv[1])){
-            fprintf(stderr ,"The argument(searched element) you sent to the application is not a number!!!");
+    else if(argc == 2){
+        if(checkifNumber(argv[1])){
+            result = findContacts(argv[1], simplecheck, 0);
+        }else{
+            fprintf(stderr ,"Wrong input!!!\nThe argument(searchedElement) you sent to the application is not a number!!!");
             return EXIT_FAILURE;
         }
-        if(argc == 2){
-            result = findContacts(argv[1], 0);
+    }
+    else if(argc == 3){
+        if(strcmp(argv[1], "-s") == 0 && checkifNumber(argv[2])){
+            result = findContacts(argv[2], checkwithspaces, 0);
         }
-        if(argc == 3){
-            if(!checkifNumber(argv[2])){
-                fprintf(stderr ,"The argument(maximal count of possible mistakes) you sent the application is not a number!!!");
+        else{
+            fprintf(stderr, "Wrong input!!!\nFormat with this count of arguments must be -s [searchedElement]");
+            return EXIT_FAILURE;
+        }
+    }
+    else if(argc == 4){
+        if(checkifNumber(argv[1]) && strcmp(argv[2], "-l") == 0 && checkifNumber(argv[3])){
+            int mistakesCount = convertStringToInt(argv[3]);
+            if(mistakesCount < 100){
+                result = findContacts(argv[1], levenshteinmethod, mistakesCount);
+            }
+            else{
+                fprintf(stderr, "Wrong input!!!\nAn argument [MaximalCountOFUserMistakes] can\'t be larger than 99");
                 return EXIT_FAILURE;
             }
-            if(strlen(argv[2]) > 2){
-                fprintf(stderr ,"The second argument can't be higher than 99\n(the maximal length of the line is 100 chars)");
-                return EXIT_FAILURE;
-            }
-            result = findContacts(argv[1], convertStringToInt(argv[2]));
+        }
+        else{
+            fprintf(stderr, "Wrong input!!!\nFormat with this count of arguments must be [searchedElement] -l [MaximalCountOFUserMistakes]");
+            return EXIT_FAILURE;
         }
     }
     else{
-        fprintf(stderr ,"You have given wrong amount of arguments");
+        fprintf(stderr, "Wrong input!!!\nYou sent the program too many arguments");
         return EXIT_FAILURE;
     }
 
@@ -72,11 +79,11 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
-int findContacts(char searchedElement[], int countOfMistakes)//basic function for both cases
+int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)//basic function for both cases
 {
     char name[SIZE];
     char number[SIZE];
@@ -101,22 +108,28 @@ int findContacts(char searchedElement[], int countOfMistakes)//basic function fo
             return ERROR;
         }
 
-        //Calling appropriate method in dependacy of given arguments in the launching of the program
-        if(searchedElement == NULL){
-            printf("%s %s\n", name, number);
+        //Calling appropriate method in dependacy on given arguments in the launching of the program
+        if(mode == displayall){
+            printf("%s, %s\n", name, number);
             isFound = true;
-        }
-        else if(countOfMistakes > 0){
+        }else if(mode == simplecheck){
+            if(levenshteinMethod(number, searchedElement, 0) ||
+            levenshteinMethod(name, searchedElement, 0)){
+                printf("%s, %s\n", name, number);
+                isFound = true;
+            }
+        }else if(mode == checkwithspaces){
+            if(CheckWithSpace(0,number, 0, searchedElement) ||
+            CheckWithSpace(0,name, 0, searchedElement)){
+                printf("%s, %s\n", name, number);
+                isFound = true;
+            }
+        }else if(mode == levenshteinmethod){
             if(levenshteinMethod(number, searchedElement, countOfMistakes) ||
             levenshteinMethod(name, searchedElement, countOfMistakes)){
                 printf("%s %s\n", name, number);
                 isFound = true;
             }
-        }
-        else if(checkIfAppropriate(0,number, 0, searchedElement) ||
-         checkIfAppropriate(0,name, 0, searchedElement)){
-            printf("%s %s\n", name, number);
-            isFound = true;
         }
     }while(isLastLine);
 
@@ -173,92 +186,84 @@ char toLower(char c){
 }
 
 
-bool isSymbotMatched(char symbol, char wanted){//checking here if a symbol in the provided argument is in the name/number
-    if(symbol>='0' && symbol <= '9' ){
-        return symbol == wanted;
-    }else if(symbol >= 'a' && symbol <= 'z'){
-        //Calculating needed row in the dictionary
-        int index = wanted - '0';
-        if(dictionary[index] != NULL){
-            for(int j = 0; dictionary[index][j] != '\0'; j++){
-                if(symbol == dictionary[index][j]){
-                    return true;
-                }
-            }
-        } 
+bool isSymbolMatched(char symbol, char wanted){//checking here if a symbol in the provided argument is in the name/number
+    char dictionary[10][6] = {"0+", "1", "2abc", "3def", "4ghi", "5jkl", "6mno", "7pqrs", "8tuv", "9wxyz"};
+    //Finding possible searched list of chars
+    char *possibleFindings = dictionary[wanted - '0'];
+    for(int j = 0; j < strlen(possibleFindings); j++){
+        if(symbol == possibleFindings[j]){
+            return true;
+        }
     }
     return false;
 }
 
-bool checkIfAppropriate(int startPoint, char str[], int startPoint2, char wanted[]){
+bool CheckWithSpace(int startPoint, char str[], int startPoint2, char wanted[]){
     for(int i = startPoint; i < strlen(str); i++){
-        if(isSymbotMatched(str[i], wanted[startPoint2])){
+        if(isSymbolMatched(str[i], wanted[startPoint2])){
 
             //Checking if we already checked all chars in searched element
-            if(startPoint2+1 == strlen(wanted)){
+            if(startPoint2 == strlen(wanted) - 1){
                 return true;
             }
-            if(checkIfAppropriate(i+1, str, startPoint2+1, wanted)){ //going to the next etap of recursion
+            if(CheckWithSpace(i+1, str, startPoint2+1, wanted)){ //going to the next etap of recursion
                 return true;
             }
         }
 
-        /*if(i + 1 == strlen(str)){
-           if(countOfMistakes > 0){
-                if(strlen(wanted) - startPoint2-1 <= countOfMistakes){
-                    printf("\t\t%s - %c - %c - %d - %d\n", str, str[i], wanted[startPoint2], countOfMistakes-1, startPoint2);
-                    // printf("\n%d - %d\n", startPoint2+2, strlen(wanted));
-                    str[i] = toUpper(str[i]);
-                    return true;
-                }
-                // printf("%s - %c - %c - %d - %d\n", str, str[i], wanted[startPoint2], countOfMistakes-1, startPoint2);
-                startPoint2++;
-                i = startPoint;
-                countOfMistakes--;
-            }
-        }*/
     }
     return false;
+}
+
+int Pow(int number, int power){
+    if(power > 0){
+        return number * Pow(number, power - 1);
+    }
+    return 1;
 }
 
 int convertStringToInt(char numToConvert[]){
     int result = 0;
     for(int i = 0; i < strlen(numToConvert); i++){
-        result += (numToConvert[i]-'0') * pow(10, strlen(numToConvert) - 1 - i);
+        result += (numToConvert[i]-'0') * Pow(10, strlen(numToConvert) - 1 - i);
     }
     return result;
 }
 
 bool levenshteinMethod(char str[], char wanted[], int countOfMistakes){
-    bool isLineMatched = false;
-    int initialCountOfMistakes = countOfMistakes;
-    //checking here if the line which is being searched contains searched element
-    //(including maximal amount of user made mistakes)
-    for(int i = 0; i < strlen(str); i++){
-        for(int j = 0; j < strlen(wanted) && i+j < strlen(str); j++){
-            isLineMatched = false;
-            if(isSymbotMatched(str[j+i], wanted[j])){
-                isLineMatched = true;
+    int initialMistakesCount = countOfMistakes;
+     for(int i = 0; i < strlen(str); i++){
+        int extra = 0;
+        int extraArg = 0;
+        for(int j = 0; i + j + extra < strlen(str) && j + extraArg < strlen(wanted); j++){
+            if(isSymbolMatched(str[i+j+extra], wanted[j + extraArg])){
+                if(j + extraArg == strlen(wanted) - 1){
+                    return true;
+                }
             }
             else{
                 if(countOfMistakes > 0){
-                    isLineMatched = true;
                     countOfMistakes--;
+                    if(isSymbolMatched(str[i + j + extra + 1], wanted[j + extraArg])){
+                        extra++;
+                    }else if(isSymbolMatched(str[i + j + extra], wanted[j+extraArg+1])){
+                        extraArg++;
+                    }
+                    if(j + extraArg >= strlen(wanted) - 1){
+                        return true;
+                    }
                 }else{
-                    countOfMistakes = initialCountOfMistakes;
+                    countOfMistakes = initialMistakesCount;
                     break;
                 }
-            }
-            //if iteration can go outside of the boundaries of the line(which is being checked)
-            //then check if the maximal possible position of iteration
-            //(considering it like the sum of the length of searched element and the counter of higher iteration)
-            //is lower than the count of possible mistakes, then current contact is suitable
-            if(i+j == strlen(str) - 1){
-                if(strlen(wanted) + i - strlen(str) <= countOfMistakes){
-                    isLineMatched = true;
+                if(i + j + extra >= strlen(str) - 1){
+                    if(strlen(wanted) + i + extra - extraArg - strlen(str) <= countOfMistakes){
+                        return true;
+                    }
                 }
             }
+
         }
     }
-    return isLineMatched;
+    return false;
 }

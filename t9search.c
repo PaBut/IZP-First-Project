@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
-//Maximal size of line(100 symbols + char '\0')
+//Maximal size of line(100symbols + char '\0')
 #define SIZE 101
+//An integer value returned by any function other than main in case of error 
 #define ERROR -1
 
 //possible modes of searching in the program
@@ -29,6 +29,7 @@ int returnError(int returnValue, char msg[]);
 
 int main(int argc, char* argv[])
 {       
+    //Variable that indicates if any contacts were found and if there's an error in input file
     int result = 0;
 
     //Checking if the arguments were proper and setting the search mode in dependancy on it
@@ -52,13 +53,10 @@ int main(int argc, char* argv[])
     }
     else if(argc == 4){
         if(checkifNumber(argv[1]) && areEqualStrings(argv[2], "-l") && checkifNumber(argv[3])){
-            int mistakesCount = convertStringToInt(argv[3]);
-            if(mistakesCount < 100){
-                result = findContacts(argv[1], levenshteinmethod, mistakesCount);
-            }
-            else{
+            if(stringLength(argv[3]) > 2){
                 return returnError(EXIT_FAILURE ,"Wrong input!!!\nAn argument [MaximalCountOFUserMistakes] can\'t be larger than 99");
             }
+            result = findContacts(argv[1], levenshteinmethod, convertStringToInt(argv[3]));
         }
         else{
             return returnError(EXIT_FAILURE ,"Wrong input!!!\nFormat with this count of arguments must be [searchedElement] -l [MaximalCountOFUserMistakes]");
@@ -78,8 +76,8 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
-
-int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)//basic function for all cases
+//basic function for all modes of searching
+int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)
 {
     char name[SIZE];
     char number[SIZE];
@@ -245,7 +243,7 @@ bool CheckWithSpace(int startPoint, char str[], int startPoint2, char wanted[]){
     for(int i = startPoint; i < stringLength(str); i++){
         if(isSymbolMatched(str[i], wanted[startPoint2])){
 
-            //Checking if we already checked all chars in searched element(bae state)
+            //Checking if we already checked all chars in searched element(base state)
             if(startPoint2 == stringLength(wanted) - 1){
                 return true;
             }
@@ -277,22 +275,33 @@ bool levenshteinMethod(char line[], char wanted[], int countOfMistakes){
             if(!isSymbolMatched(line[indexLine], wanted[indexArg])){
                 if(countOfMistakes > 0){
                     countOfMistakes--;
-                    //if neither of conditions below is true, then the number(symbol) is just mistaken
-
-                    //extra number added in the argument
-                    //From now on checking every time symbol in the searched element with incremented index
-                    if(isSymbolMatched(line[indexLine], wanted[indexArg+1])){
-                        extraArg++;
-                        indexArg++;
+                    //if neither of the conditions below is true, then the number(symbol) is just mistaken
+                    //checking with for loop if one or more number were missed/added extra in the searched element
+                    for(int m = 1; m <= countOfMistakes+1 && (indexArg + m < stringLength(wanted) && indexLine + m < stringLength(line)); m++){
+                        if(indexArg + m < stringLength(wanted)){
+                            //extra number(s) was/were added in the searched element
+                            //From now on checking every time symbol in the searched element with incremented on count of extra numbers index
+                            if(isSymbolMatched(line[indexLine], wanted[indexArg+m])){
+                                extraArg+=m;
+                                indexArg+=m;
+                                countOfMistakes-=m-1;
+                                break;
+                            }
+                        }
+                        if(indexLine + m < stringLength(line)){
+                            //a number(s) was/were missed in the searched element
+                            //From now on every time checking a symbol in the line with incremented on count of missed numbers index
+                            if(isSymbolMatched(line[indexLine + m], wanted[indexArg])){
+                                extra+=m;
+                                indexLine+=m;
+                                countOfMistakes-=m-1;
+                                break;
+                            }  
+                        }
                     }
-                    //a number was missed in the argument
-                    //From now on checking every time symbol in the line with incremented index
-                    else if(isSymbolMatched(line[indexLine + 1], wanted[indexArg])){
-                        extra++;
-                        indexLine++;
-                    }  
-                }else{
-                    //Not a single mistake left. Starting from the beginning with the next element in the line
+                }
+                else{
+                    //Not a single mistake left. Starting from the beginning with the next symbol in the line
                     //Setting countOfMistakes to the default value
                     countOfMistakes = initialMistakesCount;
                     break;
@@ -303,7 +312,7 @@ bool levenshteinMethod(char line[], char wanted[], int countOfMistakes){
             if(indexArg >= stringLength(wanted) - 1){
                 return true;
             }
-            //The index of line is last
+            //The checked symbol in line was last
             if(indexLine >= stringLength(line) - 1){
                 //if iteration can go outside of the boundaries of the line(which is being checked)
                 //then check if the difference of maximal possible position of iteration and the length of line

@@ -155,7 +155,7 @@ int getLine(char line[])
     return true;
 }
 
-//checking if the current line is a number, not a name of the contact
+//checking if the current line is an appropriate number
 bool checkifNumber(char line[]){
     bool isNumber = true;
     for(int i = 0; i < stringLength(line); i++){
@@ -166,7 +166,7 @@ bool checkifNumber(char line[]){
     return isNumber;
 }
 
-//checking if the current line is a name, not the number of the contact
+//checking if the current line is an appropriate name of the contact
 bool checkIfName(char line[]){
     bool isName = false;
     for(int i = 0; i < stringLength(line); i++){

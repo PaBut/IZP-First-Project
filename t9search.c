@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-//Maximal size of line(100symbols + char '\0')
-#define SIZE 101
+//Maximal size of line(100symbols + possibly '\r' + possibly '\n' + char '\0')
+#define SIZE 103
 //An integer value returned by any function other than main in case of error 
 #define ERROR -1
 
@@ -81,17 +81,20 @@ int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)
 {
     char name[SIZE];
     char number[SIZE];
-    int isLastLine;
-    int isValidName;
+    int gotNumber;
+    int gotName;
 
     bool isFound = false;
 
-    do{
+    while((gotName = getLine(name)) != false){
         //Checking in the following lines if there's an error in the file input
-        if(!(isValidName = getLine(name))){  
-            return returnError(ERROR ,"Wrong file input!!!\nYou forgot to add a number after the name");
+        if(gotName == ERROR){
+            return ERROR;
         }
-        if(isValidName == ERROR || (isLastLine = getLine(number)) == ERROR){
+        if((gotNumber = getLine(number)) == false){
+            return returnError(ERROR ,"Wrong file input!!!\nYou forgot to add a number after the name at the end of the list");
+        }
+        if(gotNumber == ERROR){
             return ERROR;
         }
         if(!checkIfName(name) || !checkifNumber(number)){
@@ -123,7 +126,7 @@ int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)
                 isFound = true;
             }
         }
-    }while(isLastLine);
+    }
 
     return isFound;
 }
@@ -133,26 +136,23 @@ int findContacts(char searchedElement[], selectedMode mode, int countOfMistakes)
 //and if there's a empty line
 int getLine(char line[])
 {
-    for(int i = 0; i < SIZE ; i++ ){
-
-        int symbolASCII = getc(stdin);
-        if(symbolASCII == EOF){
-            if(i == 0){
-                return returnError(ERROR ,"Wrong file input!!!\nEmpty line at the end of the list of contacts");
-            }
+    if(fgets(line, SIZE, stdin) == NULL){
+        return false;
+    }
+    if(line[0] == '\n' || line[0] == '\r'){
+        return returnError(ERROR ,"Wrong file input!!!\nEmpty line in the list of contacts");
+    }
+    for(int i = 0; i < stringLength(line); i++){
+        line[i] = toLower(line[i]);
+        if(line[i] == '\n' || line[i] == '\r' || line[i] == '\0'){
             line[i] = '\0';
-            return false;
+            break;
         }
-        line[i] = toLower((char)symbolASCII);
-        if(line[i] == '\n'){
-            if(i == 0){
-                return returnError(ERROR ,"Wrong file input!!!\nEmpty line in the list of contacts");
-            }
-            line[i] = '\0';
-            return true;
-        }        
-    }    
-    return returnError(ERROR ,"Wrong file input!!!\nThe line is higher than 100 chars");
+        if(i == SIZE-3){
+            return returnError(ERROR, "Wrong file input!!!\nThe line is higher than 100 chars");
+        }
+    }
+    return true;
 }
 
 //checking if the current line is a number, not a name of the contact
@@ -222,7 +222,7 @@ int convertStringToInt(char numToConvert[]){
 
 //Returning an error result accompanied with text sent to stderr
 int returnError(int returnValue, char msg[]){
-    fprintf(stderr, msg);
+    fprintf(stderr, "%s\n", msg);
     return returnValue;
 }
 
